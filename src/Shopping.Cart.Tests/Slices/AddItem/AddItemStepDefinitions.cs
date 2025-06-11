@@ -9,21 +9,17 @@ public sealed class AddItemCommandStepDefinitions
 {
 
 	[When("I execute the AddItem command with the following parameters:")]
-	public void WhenIExecuteTheAddItemCommand(Table parameters)
+	public void WhenIExecuteTheAddItemCommand(AddItemCommand command)
 	{
-		AddItemCommand addItemCommand = new(
-			AggregateId: Guid.Parse(parameters.Rows[0]["AggregateId"]),
-			Description: parameters.Rows[0]["Description"],
-			Image: parameters.Rows[0]["Image"],
-			Price: double.Parse(parameters.Rows[0]["Price"]),
-			TotalPrice: double.Parse(parameters.Rows[0]["TotalPrice"]),
-			ItemId: Guid.Parse(parameters.Rows[0]["ItemId"]),
-			ProductId: Guid.Parse(parameters.Rows[0]["ProductId"])
-		);
-
 		throw new PendingStepException();
 	}
 
+
+	[StepArgumentTransformation]
+	public AddItemCommand TransformAddItemCommand(DataTable table)
+	{
+		return table.CreateInstance<AddItemCommand>()
+	}
 	[Then("the CartCreated event should be created")]
 	public void ThenTheCartCreatedEventShouldBeCreated()
 	{
