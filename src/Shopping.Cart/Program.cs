@@ -26,3 +26,6 @@ app.UseHttpsRedirection();
 app.MapAddItemCommand();
 
 app.Run();
+
+// This partial class is required to use Microsoft.AspNetCore.Mvc.Testing
+public partial class Program { }
