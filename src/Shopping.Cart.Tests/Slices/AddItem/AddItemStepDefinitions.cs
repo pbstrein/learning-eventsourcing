@@ -1,9 +1,17 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Reqnroll;
+using Shopping.Cart.Events;
+using Shopping.Cart.EventStore;
 using Shopping.Cart.Slices.AddItem;
 using Shopping.Cart.Tests.Common;
 
@@ -13,7 +21,7 @@ namespace Shopping.Cart.Tests.StepDefinitions;
 public sealed class AddItemCommandStepDefinitions
 {
     private readonly WebTestContext _webTestContext;
-    
+
     public AddItemCommandStepDefinitions(WebTestContext WebTestContext)
     {
         _webTestContext = WebTestContext;
@@ -26,7 +34,7 @@ public sealed class AddItemCommandStepDefinitions
             JsonSerializer.Serialize(command),
             Encoding.UTF8,
             "application/json");
-            
+
         _webTestContext.LastResponse = await _webTestContext.Client.PostAsync("/command/addItem", jsonContent);
         _webTestContext.LastResponseBody = await _webTestContext.LastResponse.Content.ReadAsStringAsync();
     }
@@ -38,30 +46,36 @@ public sealed class AddItemCommandStepDefinitions
     }
 
     [Then("the CartCreated event should be created")]
-    public void ThenTheCartCreatedEventShouldBeCreated()
+    public async Task ThenTheCartCreatedEventShouldBeCreated()
     {
-        // For now, we're just checking that the request was successful
-        // In a real implementation, you would verify the event was created
-        // possibly by querying an endpoint that returns events or checking the event store
-        
-        if (!_webTestContext.LastResponse.IsSuccessStatusCode)
-        {
-            throw new Exception($"Request failed with status {_webTestContext.LastResponse.StatusCode}. Body: {_webTestContext.LastResponseBody}");
-        }
+        IEventStore eventStore = _webTestContext.Factory.Services.GetRequiredService<IEventStore>();
+
+        IEnumerable<IEvent> events = await eventStore.ReadAll();
+
+        IEnumerable<CartCreatedEvent> cartCreatedEvents = events.OfType<CartCreatedEvent>();
+        Assert.AreEqual(1, cartCreatedEvents.Count(), "Expected exactly one CartCreated event to be created.");
     }
 
     [Then("the ItemAdded event should be created")]
-    public void ThenTheItemAddedEventShouldBeCreated()
+    public async Task ThenTheItemAddedEventShouldBeCreated()
     {
-        // For now, we're just checking that the request was successful
-        // In a real implementation, you would verify the event was created
-        // possibly by querying an endpoint that returns events or checking the event store
-        
-        if (!_webTestContext.LastResponse.IsSuccessStatusCode)
-        {
-            throw new Exception($"Request failed with status {_webTestContext.LastResponse.StatusCode}. Body: {_webTestContext.LastResponseBody}");
-        }
 
+        IEventStore eventStore = _webTestContext.Factory.Services.GetRequiredService<IEventStore>();
+
+        IEnumerable<IEvent> events = await eventStore.ReadAll();
+
+        IEnumerable<ItemAddedEvent> itemAddedEvents = events.OfType<ItemAddedEvent>();
+        Assert.AreEqual(1, itemAddedEvents.Count(), "Expected exactly one ItemAdded event to be created.");
+    }
+
+    [Then("there should be {int} events for the aggregate {string}")]
+    public async Task ThenThereShouldBeEventsForTheAggregate(int expectedCount, string aggregateId)
+    {
+        IEventStore eventStore = _webTestContext.Factory.Services.GetRequiredService<IEventStore>();
+
+        IEnumerable<IEvent> events = await eventStore.ReadStream(aggregateId);
+
+        Assert.AreEqual(expectedCount, events.Count(), $"Expected {expectedCount} events for aggregate {aggregateId}.");
     }
 
 }

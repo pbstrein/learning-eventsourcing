@@ -12,5 +12,6 @@ Scenario: Executing AddItem adds the appropriate events
 		| Price       | 19.99                                |
 		| ItemId      | 12345678-1234-1234-1234-123456789012 |                                   
 		| ProductId   | 12345678-1234-1234-1234-123456789012 |
-	Then the ItemAdded event should be created
-	And the CartCreated event should be created	
+	Then there should be 2 events for the aggregate "12345678-1234-1234-1234-123456789012"
+	And the ItemAdded event should be created
+	And the CartCreated event should be created
